@@ -1,0 +1,66 @@
+cpp_compiler?=gcc
+linker?=gcc
+config?=debug
+build_dir:=build/${config}
+
+src_cflags:= -Isrc -std=c++1z -Wall -Werror -MMD -MP
+src_lflags:= -lstdc++
+
+gtest_dir:= googletest/googletest
+gtest_cflags:= -isystem ${gtest_dir}/include -I${gtest_dir}
+
+utest_cflags:= ${gtest_cflags} ${src_cflags}
+utest_lflags:= -lstdc++ -pthread
+
+ifeq ($(config), release)
+  src_cflags += -g -O3 -DNDEBUG
+  gtest_cflags += -g -O3 -DNDEBUG
+  utest_cflags += -g -O3 -DNDEBUG
+
+  utest_lflags += -g -O3
+  src_lflags += -g -O3
+else
+  ifeq ($(config), profile)
+	src_cflags += -g -O3 -DNDEBUG -pg -no-pie
+	gtest_cflags += -g -O3 -DNDEBUG
+	utest_cflags += -g -O3 -DNDEBUG -pg -no-pie
+
+    utest_lflags += -g -O3 -pg -no-pie
+    src_lflags += -g -O3 -pg -no-pie
+  else
+    ifeq ($(config), coverage)
+	  src_cflags += -g -ftest-coverage -fprofile-arcs
+	  gtest_cflags += -g -O -DNDEBUG
+	  utest_cflags += -g -O -DNDEBUG
+
+      utest_lflags += -g -lgcov
+      src_lflags += -g -lgcov
+    else
+      ifeq ($(config), debug)
+		src_cflags += -g
+		gtest_cflags += -g
+		utest_cflags += -g
+
+		utest_lflags += -g
+		src_lflags += -g
+      else
+$(error Unknown config: $(config))
+      endif
+    endif
+  endif
+endif
+
+
+.PHONY: all exe utest clean
+all: exe utest
+utest: ${build_dir}/utest
+exe: ${build_dir}/xxx
+clean:
+	rm -rf build
+	rm -rf covhtml
+
+#body
+
+-include ${deps}
+
+

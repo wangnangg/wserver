@@ -163,8 +163,7 @@ Request parseRequest(const char* buff, int size)
 
 std::string dump(const Response& resp)
 {
-    std::stringbuf buffer;
-    std::ostream os(&buffer);
+    std::stringstream os;
     const char* lend = "\r\n";
     switch (resp.version)
     {
@@ -181,7 +180,7 @@ std::string dump(const Response& resp)
         os << key << ": " << val << lend;
     }
     os << lend;
-    return buffer.str();
+    return os.str();
 }
 
 }  // namespace http

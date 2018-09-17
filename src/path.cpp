@@ -1,4 +1,5 @@
 #include "path.hpp"
+#include <sstream>
 #include <stdexcept>
 
 int search(const std::string& str, int start, char c)
@@ -59,4 +60,21 @@ void Path::parsePath(const std::string& path)
         _nodes.push_back(Path::Node(std::move(name)));
         start = end + 1;
     }
+}
+
+std::string pathString(const Path& path)
+{
+    if (path.size() == 0)
+    {
+        return "";
+    }
+    int size = path.end() - path.begin();
+    std::stringstream ss;
+    for (int i = 0; i < size - 1; i++)
+    {
+        ss << path[i].name();
+        ss << "/";
+    }
+    ss << path[size - 1].name();
+    return ss.str();
 }

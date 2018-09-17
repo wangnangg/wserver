@@ -16,6 +16,7 @@ public:
     Path(const std::string& path) { parsePath(path); }
     const Node* begin() const { return &*_nodes.begin(); }
     const Node* end() const { return &*_nodes.end(); }
+    const Node& operator[](int idx) const { return _nodes[idx]; }
     int size() const { return _nodes.size(); }
 
 private:
@@ -23,3 +24,5 @@ private:
 
     void parsePath(const std::string& path);
 };
+
+std::string pathString(const Path& path);

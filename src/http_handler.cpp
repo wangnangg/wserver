@@ -72,6 +72,8 @@ void rootHandler(http::Request rq, BufferedReader& reader,
     }
 
 out:
+    auto url_p = pathString(rq.url);
+    std::cout << "url not found: " << url_p << std::endl;
     // unknown place
     if (pathString(rq.url) == page404)
     {

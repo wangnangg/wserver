@@ -18,8 +18,8 @@ void writeAll(Writer& writer, BufferedReader& reader)
     } while (read_size > 0);
 }
 
-static const std::string page404 = "/static/html/404.html";
-static const std::string page_index = "/static/html/index.html";
+static const std::string page404 = "static/html/404.html";
+static const std::string page_index = "static/html/index.html";
 
 void serveFile(const std::string& path, http::Response resp, Writer& writer)
 {

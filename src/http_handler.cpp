@@ -18,6 +18,8 @@ void writeAll(Writer& writer, BufferedReader& reader)
     } while (read_size > 0);
 }
 
+static const std::string page404 = "/static/html/404.html";
+
 void serveFile(const std::string& path, http::Response resp, Writer& writer)
 {
     std::cout << "serving file: " << path << std::endl;
@@ -58,14 +60,26 @@ void rootHandler(http::Request rq, BufferedReader& reader,
 
     if (rq.url.begin()->name() == "static")
     {
+        auto url_p = pathString(rq.url);
+        if (access(url_p.c_str(), R_OK) != 0)
+        {
+            goto out;
+        }
         resp.status = http::StatusCode::OK;
         resp.reason = "OK";
         serveFile(pathString(rq.url), std::move(resp), writer);
         return;
     }
 
+out:
     // unknown place
-    resp.status = http::StatusCode::NotFound;
-    resp.reason = "Not Found";
-    serveFile("static/html/404.html", std::move(resp), writer);
+    if (pathString(rq.url) == page404)
+    {
+        throw std::runtime_error("404 page itself is not found");
+    }
+    resp.status = http::StatusCode::MovedPermanently;
+    resp.reason = "Moved Permanently";
+    resp.headers["Location"] = page404;
+    auto resp_str = dump(resp);
+    writer.put(resp_str.c_str(), resp_str.size());
 }

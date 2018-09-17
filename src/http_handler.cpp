@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <iostream>
 #include <system_error>
 
 void writeAll(Writer& writer, BufferedReader& reader)
@@ -34,6 +35,7 @@ void serveFile(const std::string& path, http::Response resp, Writer& writer)
 
     resp.headers["Content-Length"] = std::to_string(fsize);
     auto resp_str = dump(resp);
+    std::cout << "response:\n " << resp_str << std::endl;
     writer.put(resp_str.c_str(), resp_str.size());
     writeAll(writer, reader);
 }

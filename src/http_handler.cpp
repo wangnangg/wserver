@@ -75,8 +75,16 @@ void rootHandler(http::Request rq, BufferedReader& reader,
             std::cout << "file not found" << std::endl;
             goto out;
         }
-        resp.status = http::StatusCode::OK;
-        resp.reason = "OK";
+        if (url_p == page404)
+        {
+            resp.status = http::StatusCode::NotFound;
+            resp.reason = "Not Found";
+        }
+        else
+        {
+            resp.status = http::StatusCode::OK;
+            resp.reason = "OK";
+        }
         serveFile(pathString(rq.url), std::move(resp), writer);
         return;
     }
@@ -84,7 +92,7 @@ void rootHandler(http::Request rq, BufferedReader& reader,
 out:
     std::cout << "url not found" << std::endl;
     // unknown place
-    if (pathString(rq.url) == page404)
+    if (url_p == page404)
     {
         throw std::runtime_error("404 page itself is not found");
     }

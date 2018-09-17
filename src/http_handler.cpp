@@ -19,6 +19,7 @@ void writeAll(Writer& writer, BufferedReader& reader)
 }
 
 static const std::string page404 = "/static/html/404.html";
+static const std::string page_index = "/static/html/index.html";
 
 void serveFile(const std::string& path, http::Response resp, Writer& writer)
 {
@@ -44,25 +45,34 @@ void serveFile(const std::string& path, http::Response resp, Writer& writer)
     writeAll(writer, reader);
 }
 
+void redirect(const std::string& path, http::Response resp, Writer& writer)
+{
+    std::cout << "redirecting to " << pathString(path) << std::endl;
+    resp.status = http::StatusCode::MovedPermanently;
+    resp.reason = "Moved Permanently";
+    resp.headers["Location"] = path;
+    auto resp_str = dump(resp);
+    writer.put(resp_str.c_str(), resp_str.size());
+}
+
 void rootHandler(http::Request rq, BufferedReader& reader,
                  http::Response resp, Writer& writer)
 {
+    const auto url_p = pathString(rq.url);
+
+    std::cout << "handling url: " << url_p << std::endl;
     if (rq.url.size() == 0)
     {
         // root request
-        resp.status = http::StatusCode::MovedPermanently;
-        resp.reason = "Moved Permanently";
-        resp.headers["Location"] = "/static/html/index.html";
-        auto resp_str = dump(resp);
-        writer.put(resp_str.c_str(), resp_str.size());
+        redirect(page_index, std::move(resp), writer);
         return;
     }
 
     if (rq.url.begin()->name() == "static")
     {
-        auto url_p = pathString(rq.url);
         if (access(url_p.c_str(), R_OK) != 0)
         {
+            std::cout << "file not found" << std::endl;
             goto out;
         }
         resp.status = http::StatusCode::OK;
@@ -72,16 +82,11 @@ void rootHandler(http::Request rq, BufferedReader& reader,
     }
 
 out:
-    auto url_p = pathString(rq.url);
-    std::cout << "url not found: " << url_p << std::endl;
+    std::cout << "url not found" << std::endl;
     // unknown place
     if (pathString(rq.url) == page404)
     {
         throw std::runtime_error("404 page itself is not found");
     }
-    resp.status = http::StatusCode::MovedPermanently;
-    resp.reason = "Moved Permanently";
-    resp.headers["Location"] = page404;
-    auto resp_str = dump(resp);
-    writer.put(resp_str.c_str(), resp_str.size());
+    redirect(page404, std::move(resp), writer);
 }

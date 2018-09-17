@@ -52,6 +52,24 @@ void redirect(const std::string& path, http::Response resp, Writer& writer)
     writer.put(resp_str.c_str(), resp_str.size());
 }
 
+bool isReadableFile(const std::string& path)
+{
+    if (access(path.c_str(), R_OK) != 0)
+    {
+        return false;
+    }
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0)
+    {
+        return false;
+    }
+    if (!S_ISREG(st.st_mode))
+    {
+        return false;
+    }
+    return true;
+}
+
 void rootHandler(http::Request rq, BufferedReader& reader,
                  http::Response resp, Writer& writer)
 {
@@ -67,7 +85,7 @@ void rootHandler(http::Request rq, BufferedReader& reader,
 
     if (rq.url.begin()->name() == "static")
     {
-        if (access(url_p.c_str(), R_OK) != 0)
+        if (!isReadableFile(url_p))
         {
             std::cout << "file not found" << std::endl;
             goto out;

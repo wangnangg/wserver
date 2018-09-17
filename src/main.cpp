@@ -122,15 +122,9 @@ int main(int argc, char** argv)
         int header_size = readHeader(reader, header_buff, buff_size);
 
         auto header_raw = std::string(header_buff, header_size);
-        std::cout << "raw:\n" << header_raw << std::endl;
+        std::cout << "http request:\n" << header_raw << std::endl;
 
         auto rq = http::parseRequest(header_buff, header_size);
-
-        std::cout << "parsed:\n" << std::endl;
-        for (auto [key, val] : rq.headers)
-        {
-            std::cout << key << "\n\t" << val << std::endl;
-        }
 
         if (rq.version == http::Version::v1_0)
         {
@@ -157,5 +151,6 @@ int main(int argc, char** argv)
         resp.headers["Server"] = "wangnangg's private server";
         rootHandler(std::move(rq), reader, std::move(resp), writer);
     }
+    std::cout << "child exited normally" << std::endl;
     return EXIT_SUCCESS;
 }

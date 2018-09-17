@@ -18,9 +18,6 @@ void writeAll(Writer& writer, BufferedReader& reader)
     } while (read_size > 0);
 }
 
-static const std::string page404 = "static/html/404.html";
-static const std::string page_index = "static/html/index.html";
-
 void serveFile(const std::string& path, http::Response resp, Writer& writer)
 {
     std::cout << "serving file: " << path << std::endl;
@@ -64,7 +61,7 @@ void rootHandler(http::Request rq, BufferedReader& reader,
     if (rq.url.size() == 0)
     {
         // root request
-        redirect(page_index, std::move(resp), writer);
+        redirect("/static/html/index.html", std::move(resp), writer);
         return;
     }
 
@@ -75,26 +72,17 @@ void rootHandler(http::Request rq, BufferedReader& reader,
             std::cout << "file not found" << std::endl;
             goto out;
         }
-        if (url_p == page404)
-        {
-            resp.status = http::StatusCode::NotFound;
-            resp.reason = "Not Found";
-        }
-        else
-        {
-            resp.status = http::StatusCode::OK;
-            resp.reason = "OK";
-        }
+        resp.status = http::StatusCode::OK;
+        resp.reason = "OK";
         serveFile(pathString(rq.url), std::move(resp), writer);
         return;
     }
 
 out:
-    std::cout << "url not found" << std::endl;
     // unknown place
-    if (url_p == page404)
-    {
-        throw std::runtime_error("404 page itself is not found");
-    }
-    redirect(page404, std::move(resp), writer);
+    std::cout << "url not found" << std::endl;
+    resp.status = http::StatusCode::NotFound;
+    resp.reason = "Not Found";
+    serveFile("static/html/404.html", std::move(resp), writer);
+    return;
 }

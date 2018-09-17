@@ -20,6 +20,7 @@ void writeAll(Writer& writer, BufferedReader& reader)
 
 void serveFile(const std::string& path, http::Response resp, Writer& writer)
 {
+    std::cout << "serving file: " << path << std::endl;
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0)
     {
@@ -47,9 +48,11 @@ void rootHandler(http::Request rq, BufferedReader& reader,
     if (rq.url.size() == 0)
     {
         // root request
-        resp.status = http::StatusCode::OK;
-        resp.reason = "OK";
-        serveFile("static/html/index.html", std::move(resp), writer);
+        resp.status = http::StatusCode::MovedPermanently;
+        resp.reason = "Moved Permanently";
+        resp.headers["Location"] = "/static/html/index.html";
+        auto resp_str = dump(resp);
+        writer.put(resp_str.c_str(), resp_str.size());
         return;
     }
 

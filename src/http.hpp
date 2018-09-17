@@ -31,6 +31,7 @@ struct Request
 enum class StatusCode
 {
     OK = 200,
+    MovedPermanently = 301,
     NotFound = 404
 };
 

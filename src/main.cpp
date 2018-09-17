@@ -1,8 +1,161 @@
-#include <cstdio>
-#include "xxx.hpp"
+#include <error.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <atomic>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <stdexcept>
+#include "http.hpp"
+#include "http_handler.hpp"
+#include "option.hpp"
+#include "path.hpp"
+#include "reader.hpp"
+#include "server.hpp"
+#include "writer.hpp"
 
-int main()
+int headerSize(char* buff, int size)
 {
-    printf("%d\n", answer());
+    if (size < 4)
+    {
+        return 0;
+    }
+    for (int i = 0; i < size - 3; i++)
+    {
+        if (std::strncmp(buff + i, "\r\n\r\n", 4) == 0)
+        {
+            return i + 4;
+        }
+    }
     return 0;
+}
+
+// read until \r\n\r\n is encountered, return the size of the content.
+int readHeader(BufferedReader& reader, char* buff, int buff_size)
+{
+    int total = 0;
+    int header_size;
+    do
+    {
+        int read_size = reader.get(buff + total, buff_size - total);
+        if (read_size == 0)
+        {
+            throw http::client_error(
+                "socket closed before request is completed");
+        }
+        total += read_size;
+        if (total >= buff_size)
+        {
+            throw http::client_error("request header too long.");
+        }
+        header_size = headerSize(buff, total);
+    } while (header_size == 0);
+    reader.put(buff + header_size, total - header_size);
+    return header_size;
+}
+
+int main(int argc, char** argv)
+{
+    CmdOption option;
+    option.ipv4_addr = "0.0.0.0";
+    option.port = "80";
+    int listen_sock;
+    try
+
+    {
+        parseArg(argc, argv, option);
+        Ipv4Address addr;
+        addr.ip = parseIpAddr(option.ipv4_addr);
+        addr.port = parsePort(option.port);
+        listen_sock = listenOn(addr, 100);
+    }
+    catch (std::exception& err)
+    {
+        std::cout << err.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    ClientInfo client;
+    while (true)
+    {
+        try
+        {
+            client = acceptClient(listen_sock);
+        }
+        catch (std::system_error& err)
+        {
+            std::cout << err.what() << std::endl;
+            continue;
+        }
+
+        auto pid = fork();
+        if (pid < 0)
+        {
+            perror("fork");
+            close(client.fd);
+            continue;
+        }
+        else if (pid == 0)
+        {
+            break;
+        }
+        // parent part
+        close(client.fd);
+        std::cout << "process " << pid << " forked to handle client."
+                  << std::endl;
+    }
+
+    // child part
+    bool keep_alive = true;
+    int buff_size = 1 << 12;  // 4kb
+    char header_buff[buff_size];
+    BufferedReader reader(client.fd, buff_size);
+    int wfd = dup(client.fd);
+    if (wfd < 0)
+    {
+        perror("dup");
+        exit(EXIT_FAILURE);
+    }
+    Writer writer(wfd);
+    while (keep_alive)
+    {
+        int header_size = readHeader(reader, header_buff, buff_size);
+
+        auto header_raw = std::string(header_buff, header_size);
+        std::cout << "raw:\n" << header_raw << std::endl;
+
+        auto rq = http::parseRequest(header_buff, header_size);
+
+        std::cout << "parsed:\n" << std::endl;
+        for (auto [key, val] : rq.headers)
+        {
+            std::cout << key << "\n\t" << val << std::endl;
+        }
+
+        if (rq.version == http::Version::v1_0)
+        {
+            keep_alive = false;
+        }
+        else
+        {
+            keep_alive = true;
+        }
+        if (rq.headers.find("Connection") != rq.headers.end())
+        {
+            if (rq.headers.at("Connection") == "keep-alive")
+            {
+                keep_alive = true;
+            }
+            else
+            {
+                keep_alive = false;
+            }
+        }
+        http::Response resp;
+        resp.version = http::Version::v1_1;
+        resp.headers["Connection"] = keep_alive ? "keep-alive" : "close";
+        resp.headers["Server"] = "wangnangg's private server";
+        rootHandler(std::move(rq), reader, std::move(resp), writer);
+    }
+    return EXIT_SUCCESS;
 }

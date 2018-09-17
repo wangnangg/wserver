@@ -1,5 +1,5 @@
-cpp_compiler?=gcc
-linker?=gcc
+cpp_compiler?=clang
+linker?=clang
 config?=debug
 build_dir:=build/${config}
 
@@ -54,7 +54,7 @@ endif
 .PHONY: all exe utest clean
 all: exe utest
 utest: ${build_dir}/utest
-exe: ${build_dir}/xxx
+exe: ${build_dir}/wserver
 clean:
 	rm -rf build
 	rm -rf covhtml

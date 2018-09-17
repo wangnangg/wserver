@@ -117,7 +117,7 @@ makefile_body.append(
 makefile_body.append(
     link_rule(linker, "${src_lflags}",
               obj_files,
-              '${build_dir}/xxx'))
+              '${build_dir}/wserver'))
 
 deps = list2makestr(
     map(lambda obj: change_ext(obj, '.d'),

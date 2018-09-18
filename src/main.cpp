@@ -1,5 +1,7 @@
 #include <error.h>
+#include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <atomic>
 #include <cstdlib>
@@ -55,6 +57,17 @@ int readHeader(BufferedReader& reader, char* buff, int buff_size)
     return header_size;
 }
 
+void setTimeout(int sock, int time_sec)
+{
+    struct timeval timeout;
+    timeout.tv_sec = time_sec;
+    timeout.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+}
+
+static const int max_request = 10;
+static const int sock_timeout_sec = 10;
+static const int max_worker = 100;
 int main(int argc, char** argv)
 {
     CmdOption option;
@@ -76,8 +89,30 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
     ClientInfo client;
+    int worker_count = 0;
     while (true)
     {
+        // before blocking, try collecting all zombies
+        while (worker_count > 0)
+        {
+            int wstatus;
+            int cpid = waitpid(-1, &wstatus, WNOHANG);
+            if (cpid < 0)
+            {
+                perror("waitpid");
+                exit(EXIT_FAILURE);
+            }
+            if (cpid == 0)
+            {
+                // no child exits for now
+                break;
+            }
+            worker_count -= 1;
+            std::cout << "child pid " << cpid
+                      << " exited with code: " << WEXITSTATUS(wstatus)
+                      << std::endl;
+        }
+        std::cout << "worker: " << worker_count << std::endl;
         try
         {
             client = acceptClient(listen_sock);
@@ -87,7 +122,23 @@ int main(int argc, char** argv)
             std::cout << err.what() << std::endl;
             continue;
         }
-
+        if (worker_count >= max_worker)
+        {
+            std::cout
+                << "too many worker in progress. waiting for one to finish"
+                << std::endl;
+            int wstatus;
+            int cpid = waitpid(-1, &wstatus, 0);
+            if (cpid < 0)
+            {
+                perror("waitpid");
+                exit(EXIT_FAILURE);
+            }
+            worker_count -= 1;
+            std::cout << "child pid " << cpid
+                      << " exited with code: " << WEXITSTATUS(wstatus)
+                      << std::endl;
+        }
         auto pid = fork();
         if (pid < 0)
         {
@@ -99,6 +150,7 @@ int main(int argc, char** argv)
         {
             break;
         }
+        worker_count += 1;
         // parent part
         close(client.fd);
         std::cout << "process " << pid << " forked to handle client."
@@ -109,6 +161,7 @@ int main(int argc, char** argv)
     bool keep_alive = true;
     int buff_size = 1 << 12;  // 4kb
     char header_buff[buff_size];
+    setTimeout(client.fd, sock_timeout_sec);
     BufferedReader reader(client.fd, buff_size);
     int wfd = dup(client.fd);
     if (wfd < 0)
@@ -117,40 +170,53 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
     Writer writer(wfd);
-    while (keep_alive)
+    int request_count = 0;
+    try
     {
-        int header_size = readHeader(reader, header_buff, buff_size);
-
-        auto header_raw = std::string(header_buff, header_size);
-        std::cout << "http request:\n" << header_raw << std::endl;
-
-        auto rq = http::parseRequest(header_buff, header_size);
-
-        if (rq.version == http::Version::v1_0)
+        while (keep_alive)
         {
-            keep_alive = false;
-        }
-        else
-        {
-            keep_alive = true;
-        }
-        if (rq.headers.find("Connection") != rq.headers.end())
-        {
-            if (rq.headers.at("Connection") == "keep-alive")
-            {
-                keep_alive = true;
-            }
-            else
+            int header_size = readHeader(reader, header_buff, buff_size);
+
+            auto header_raw = std::string(header_buff, header_size);
+            std::cout << "http request:\n" << header_raw << std::endl;
+
+            auto rq = http::parseRequest(header_buff, header_size);
+
+            if (rq.version == http::Version::v1_0)
             {
                 keep_alive = false;
             }
+            else
+            {
+                keep_alive = true;
+            }
+            if (rq.headers.find("Connection") != rq.headers.end())
+            {
+                if (rq.headers.at("Connection") == "keep-alive")
+                {
+                    keep_alive = true;
+                }
+                else
+                {
+                    keep_alive = false;
+                }
+            }
+            request_count += 1;
+            if (request_count >= max_request)
+            {
+                keep_alive = false;
+            }
+            http::Response resp;
+            resp.version = http::Version::v1_1;
+            resp.headers["Connection"] = keep_alive ? "keep-alive" : "close";
+            resp.headers["Server"] = "wangnangg's private server";
+            rootHandler(std::move(rq), reader, std::move(resp), writer);
         }
-        http::Response resp;
-        resp.version = http::Version::v1_1;
-        resp.headers["Connection"] = keep_alive ? "keep-alive" : "close";
-        resp.headers["Server"] = "wangnangg's private server";
-        rootHandler(std::move(rq), reader, std::move(resp), writer);
     }
-    std::cout << "child exited normally" << std::endl;
+    catch (std::exception& err)
+    {
+        std::cout << "error in process request: " << err.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
     return EXIT_SUCCESS;
 }

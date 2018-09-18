@@ -65,7 +65,7 @@ void setTimeout(int sock, int time_sec)
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 }
 
-static const int max_request = 10;
+static const int max_request = 1;
 static const int sock_timeout_sec = 10;
 static const int max_worker = 100;
 int main(int argc, char** argv)
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
             std::cout << err.what() << std::endl;
             continue;
         }
-        if (worker_count >= max_worker)
+        while (worker_count >= max_worker)
         {
             std::cout
                 << "too many worker in progress. waiting for one to finish"

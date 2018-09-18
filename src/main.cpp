@@ -111,8 +111,8 @@ int main(int argc, char** argv)
             std::cout << "child pid " << cpid
                       << " exited with code: " << WEXITSTATUS(wstatus)
                       << std::endl;
+            std::cout << "worker: " << worker_count << std::endl;
         }
-        std::cout << "worker: " << worker_count << std::endl;
         try
         {
             client = acceptClient(listen_sock);
@@ -135,6 +135,7 @@ int main(int argc, char** argv)
                 exit(EXIT_FAILURE);
             }
             worker_count -= 1;
+            std::cout << "worker: " << worker_count << std::endl;
             std::cout << "child pid " << cpid
                       << " exited with code: " << WEXITSTATUS(wstatus)
                       << std::endl;
@@ -151,6 +152,7 @@ int main(int argc, char** argv)
             break;
         }
         worker_count += 1;
+        std::cout << "worker: " << worker_count << std::endl;
         // parent part
         close(client.fd);
         std::cout << "process " << pid << " forked to handle client."

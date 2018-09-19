@@ -74,14 +74,13 @@ void rootHandler(http::Request rq, BufferedReader& reader,
 {
     const auto url_p = pathString(rq.url);
 
-    if (rq.url.size() == 0)
+    if (rq.url.begin()->name() == "static" || rq.url.size() == 0)
     {
-        // root request
-        rq.url = Path("/index.html");
-    }
-
-    if (rq.url.begin()->name() == "static")
-    {
+        if (rq.url.size() == 0)
+        {
+            // root request
+            rq.url = Path("/index.html");
+        }
         if (!isReadableFile(url_p))
         {
             std::cout << "file not found" << std::endl;

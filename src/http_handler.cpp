@@ -20,7 +20,6 @@ void writeAll(Writer& writer, BufferedReader& reader)
 
 void serveFile(const std::string& path, http::Response resp, Writer& writer)
 {
-    std::cout << "serving file: " << path << std::endl;
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0)
     {
@@ -35,9 +34,9 @@ void serveFile(const std::string& path, http::Response resp, Writer& writer)
     int fsize = st.st_size;
     auto reader = BufferedReader(fd, 0);
 
+    std::cout << "serving file: " << path << std::endl;
     resp.headers["Content-Length"] = std::to_string(fsize);
     auto resp_str = dump(resp);
-    std::cout << "response:\n" << resp_str << std::endl;
     writer.put(resp_str.c_str(), resp_str.size());
     writeAll(writer, reader);
 }
@@ -75,7 +74,6 @@ void rootHandler(http::Request rq, BufferedReader& reader,
 {
     const auto url_p = pathString(rq.url);
 
-    std::cout << "handling url: " << url_p << std::endl;
     if (rq.url.size() == 0)
     {
         // root request

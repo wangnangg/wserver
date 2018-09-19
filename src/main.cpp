@@ -108,10 +108,6 @@ int main(int argc, char** argv)
                 break;
             }
             worker_count -= 1;
-            std::cout << "child pid " << cpid
-                      << " exited with code: " << WEXITSTATUS(wstatus)
-                      << std::endl;
-            std::cout << "worker: " << worker_count << std::endl;
         }
         try
         {
@@ -124,9 +120,6 @@ int main(int argc, char** argv)
         }
         while (worker_count >= max_worker)
         {
-            std::cout
-                << "too many worker in progress. waiting for one to finish"
-                << std::endl;
             int wstatus;
             int cpid = waitpid(-1, &wstatus, 0);
             if (cpid < 0)
@@ -135,10 +128,6 @@ int main(int argc, char** argv)
                 exit(EXIT_FAILURE);
             }
             worker_count -= 1;
-            std::cout << "worker: " << worker_count << std::endl;
-            std::cout << "child pid " << cpid
-                      << " exited with code: " << WEXITSTATUS(wstatus)
-                      << std::endl;
         }
         auto pid = fork();
         if (pid < 0)
@@ -152,11 +141,8 @@ int main(int argc, char** argv)
             break;
         }
         worker_count += 1;
-        std::cout << "worker: " << worker_count << std::endl;
         // parent part
         close(client.fd);
-        std::cout << "process " << pid << " forked to handle client."
-                  << std::endl;
     }
 
     // child part
@@ -180,9 +166,11 @@ int main(int argc, char** argv)
             int header_size = readHeader(reader, header_buff, buff_size);
 
             auto header_raw = std::string(header_buff, header_size);
-            std::cout << "http request:\n" << header_raw << std::endl;
 
             auto rq = http::parseRequest(header_buff, header_size);
+
+            std::cout << "http: " << http::methodString(rq.method);
+            std::cout << " " << pathString(rq.url) << std::endl;
 
             if (rq.version == http::Version::v1_0)
             {

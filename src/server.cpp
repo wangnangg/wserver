@@ -8,9 +8,9 @@
 std::string ipString(uint32_t ip)
 {
     std::stringstream ss;
-    int mod = 1 << 8;
+    unsigned mod = 1 << 8;
 
-    int val = ip >> 24;
+    unsigned val = ip >> 24;
     ss << val % mod << ".";
 
     val = ip >> 16;

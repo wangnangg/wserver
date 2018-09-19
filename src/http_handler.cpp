@@ -77,8 +77,7 @@ void rootHandler(http::Request rq, BufferedReader& reader,
     if (rq.url.size() == 0)
     {
         // root request
-        redirect("/static/index.html", std::move(resp), writer);
-        return;
+        rq.url = Path("/index.html");
     }
 
     if (rq.url.begin()->name() == "static")
@@ -99,6 +98,6 @@ out:
     std::cout << "url not found" << std::endl;
     resp.status = http::StatusCode::NotFound;
     resp.reason = "Not Found";
-    serveFile("static/404.html", std::move(resp), writer);
+    serveFile("404.html", std::move(resp), writer);
     return;
 }

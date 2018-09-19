@@ -72,12 +72,13 @@ bool isReadableFile(const std::string& path)
 void rootHandler(http::Request rq, BufferedReader& reader,
                  http::Response resp, Writer& writer)
 {
-    const auto url_p = pathString(rq.url);
     if (rq.url.size() == 0)
     {
         // root request
         rq.url = Path("/index.html");
     }
+
+    const auto url_p = pathString(rq.url);
 
     if (rq.url.begin()->name() == "static" ||
         rq.url.begin()->name() == "index.html")

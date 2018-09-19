@@ -10,6 +10,8 @@ struct Ipv4Address
     uint16_t port;
 };
 
+std::string ipString(uint32_t ip);
+
 int listenOn(Ipv4Address addr, int wait_queue_len);
 uint32_t parseIpAddr(const std::string& ip_str);
 uint16_t parsePort(const std::string& port_str);

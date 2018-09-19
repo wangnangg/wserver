@@ -1,8 +1,29 @@
 #include "server.hpp"
 #include <netinet/ip.h>
 #include <sys/socket.h>
+#include <sstream>
 #include <stdexcept>
 #include <system_error>
+
+std::string ipString(uint32_t ip)
+{
+    std::stringstream ss;
+    int mod = 1 << 8;
+
+    int val = ip >> 24;
+    ss << val % mod << ".";
+
+    val = ip >> 16;
+    ss << val % mod << ".";
+
+    val = ip >> 8;
+    ss << val % mod << ".";
+
+    val = ip;
+    ss << val % mod;
+
+    return ss.str();
+}
 
 int listenOn(Ipv4Address addr, int wait_queue_len)
 {

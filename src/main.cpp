@@ -146,6 +146,7 @@ int main(int argc, char** argv)
     }
 
     // child part
+    std::cout << "welcome guest: " << ipString(client.addr.ip) << std::endl;
     bool keep_alive = true;
     int buff_size = 1 << 12;  // 4kb
     char header_buff[buff_size];

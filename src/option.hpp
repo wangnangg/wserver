@@ -7,11 +7,4 @@ struct CmdOption
     std::string port;
 };
 
-
 void parseArg(int argc, char* argv[], CmdOption& option);
-
-
-
-
-
-

@@ -14,16 +14,7 @@ enum class Method
     Post
 };
 
-std::string methodString(Method m)
-{
-    switch (m)
-    {
-        case Method::Get:
-            return "Get";
-        default:
-            return "Post";
-    }
-}
+std::string methodString(Method m);
 
 enum class Version
 {

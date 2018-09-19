@@ -24,6 +24,17 @@ bool isWhite(char c)
     }
 }
 
+std::string methodString(Method m)
+{
+    switch (m)
+    {
+        case Method::Get:
+            return "Get";
+        default:
+            return "Post";
+    }
+}
+
 std::vector<std::string> split(const char* buff, int size)
 {
     std::vector<std::string> res;

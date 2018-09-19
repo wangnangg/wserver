@@ -29,7 +29,8 @@ void parseArg(int argc, char* argv[], CmdOption& option)
                 break;
 
             case '?':
-                throw std::invalid_argument("unknown option or missing argument.");
+                throw std::invalid_argument(
+                    "unknown option or missing argument.");
                 break;
 
             default:

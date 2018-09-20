@@ -171,7 +171,7 @@ int main(int argc, char** argv)
             auto rq = http::parseRequest(header_buff, header_size);
 
             std::cout << "http: " << http::methodString(rq.method);
-            std::cout << " " << pathString(rq.url) << std::endl;
+            std::cout << " " << urlString(rq.url) << std::endl;
 
             if (rq.version == http::Version::v1_0)
             {

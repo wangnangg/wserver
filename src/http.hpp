@@ -26,7 +26,7 @@ struct Request
 {
     Version version;
     Method method;
-    Path url;
+    Url url;
     std::unordered_map<std::string, std::string> headers;
 };
 

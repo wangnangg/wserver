@@ -140,7 +140,7 @@ Request parseRequest(const char* buff, int size)
         throw client_error("first line in request needs exactly three words");
     }
     auto method = parseMethod(words[0]);
-    auto url = Path(words[1]);
+    auto url = parseUrl(words[1]);
     auto version = parseVersion(words[2]);
     auto headers = std::unordered_map<std::string, std::string>();
     while (size > 0)

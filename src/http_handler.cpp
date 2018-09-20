@@ -41,12 +41,12 @@ void serveFile(const std::string& path, http::Response resp, Writer& writer)
     writeAll(writer, reader);
 }
 
-void redirect(const std::string& path, http::Response resp, Writer& writer)
+void redirect(const Url& url, http::Response resp, Writer& writer)
 {
-    std::cout << "redirecting to " << pathString(path) << std::endl;
+    std::cout << "redirecting to " << urlString(url) << std::endl;
     resp.status = http::StatusCode::MovedPermanently;
     resp.reason = "Moved Permanently";
-    resp.headers["Location"] = path;
+    resp.headers["Location"] = urlString(url);
     auto resp_str = dump(resp);
     writer.put(resp_str.c_str(), resp_str.size());
 }
@@ -72,25 +72,25 @@ bool isReadableFile(const std::string& path)
 void rootHandler(http::Request rq, BufferedReader& reader,
                  http::Response resp, Writer& writer)
 {
-    if (rq.url.size() == 0)
+    if (rq.url.path.size() == 0)
     {
         // root request
-        rq.url = Path("/index.html");
+        rq.url = parseUrl("/index.html");
     }
 
-    const auto url_p = pathString(rq.url);
+    const auto local_path = pathString(rq.url.path);
 
-    if (rq.url.begin()->name() == "static" ||
-        rq.url.begin()->name() == "index.html")
+    if (rq.url.path.front() == "static" ||
+        rq.url.path.front() == "index.html")
     {
-        if (!isReadableFile(url_p))
+        if (!isReadableFile(local_path))
         {
             std::cout << "file not found" << std::endl;
             goto out;
         }
         resp.status = http::StatusCode::OK;
         resp.reason = "OK";
-        serveFile(pathString(rq.url), std::move(resp), writer);
+        serveFile(local_path, std::move(resp), writer);
         return;
     }
 

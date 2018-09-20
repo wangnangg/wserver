@@ -35,7 +35,7 @@ bool isGoodChar(char c)
     return false;
 }
 
-bool isValidPathName(const std::string& name)
+bool isGoodIdentifier(const std::string& name)
 {
     if (name.size() == 0)
     {
@@ -51,8 +51,28 @@ bool isValidPathName(const std::string& name)
     return true;
 }
 
-bool isValidKeyName(const std::string& key) { return isValidPathName(key); }
-bool isValidValName(const std::string& val) { return isValidPathName(val); }
+bool isValidPathName(const std::string& name)
+{
+    if (name.size() == 0)
+    {
+        return false;
+    }
+    if (name == "." || name == "..")
+    {
+        return false;
+    }
+    for (char c : name)
+    {
+        if (!isGoodChar(c) && c != '.')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool isValidKeyName(const std::string& key) { return isGoodIdentifier(key); }
+bool isValidValName(const std::string& val) { return isGoodIdentifier(val); }
 
 bool parseKeyVal(const std::string& str, KeyVal& res)
 {

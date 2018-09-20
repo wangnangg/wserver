@@ -7,6 +7,7 @@ void parseArg(int argc, char* argv[], CmdOption& option)
     int c;
     struct option long_options[] = {{"ip", required_argument, 0, 'i'},
                                     {"port", required_argument, 0, 'p'},
+                                    {"web-dir", required_argument, 0, 'w'},
                                     {0, 0, 0, 0}};
     while (1)
     {
@@ -27,7 +28,9 @@ void parseArg(int argc, char* argv[], CmdOption& option)
             case 'p':
                 option.port = optarg;
                 break;
-
+            case 'w':
+                option.web_dir = optarg;
+                break;
             case '?':
                 throw std::invalid_argument(
                     "unknown option or missing argument.");

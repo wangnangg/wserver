@@ -73,11 +73,15 @@ int main(int argc, char** argv)
     CmdOption option;
     option.ipv4_addr = "0.0.0.0";
     option.port = "80";
+    option.web_dir = "";
     int listen_sock;
     try
-
     {
         parseArg(argc, argv, option);
+        if (option.web_dir == "")
+        {
+            throw std::invalid_argument("web-dir must be specified.");
+        }
         Ipv4Address addr;
         addr.ip = parseIpAddr(option.ipv4_addr);
         addr.port = parsePort(option.port);
@@ -201,7 +205,8 @@ int main(int argc, char** argv)
             resp.version = http::Version::v1_1;
             resp.headers["Connection"] = keep_alive ? "keep-alive" : "close";
             resp.headers["Server"] = "wangnangg's private server";
-            rootHandler(std::move(rq), reader, std::move(resp), writer);
+            rootHandler(std::move(rq), reader, std::move(resp), writer,
+                        option.web_dir);
         }
     }
     catch (std::exception& err)

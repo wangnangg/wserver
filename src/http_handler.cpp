@@ -69,8 +69,17 @@ bool isReadableFile(const std::string& path)
     return true;
 }
 
+std::string localPath(const std::string& web_dir,
+                      const std::vector<std::string>& path)
+{
+    std::stringstream ss;
+    ss << web_dir << "/" << pathString(path);
+    return ss.str();
+}
+
 void rootHandler(http::Request rq, BufferedReader& reader,
-                 http::Response resp, Writer& writer)
+                 http::Response resp, Writer& writer,
+                 const std::string& web_dir)
 {
     if (rq.url.path.size() == 0)
     {
@@ -78,7 +87,7 @@ void rootHandler(http::Request rq, BufferedReader& reader,
         rq.url = parseUrl("/index.html");
     }
 
-    const auto local_path = pathString(rq.url.path);
+    const auto local_path = localPath(web_dir, rq.url.path);
 
     if (rq.url.path.front() == "static" ||
         rq.url.path.front() == "index.html")

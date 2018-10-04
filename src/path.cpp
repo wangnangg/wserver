@@ -28,7 +28,7 @@ bool isGoodChar(char c)
     {
         return true;
     }
-    if (c == '_')
+    if (c == '_' || c == '-')
     {
         return true;
     }

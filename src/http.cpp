@@ -152,7 +152,7 @@ Request parseRequest(const char* buff, int size)
         buff += line_size;
         if (line_size > 2)
         {
-            char* colon_pos = strchr(line_buff, ':');
+            const char* colon_pos = strchr(line_buff, ':');
             if (colon_pos == NULL)
             {
                 throw client_error("Invalid http header encountered.");

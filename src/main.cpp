@@ -65,6 +65,8 @@ void setTimeout(int sock, int time_sec)
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 }
 
+int childWork(ClientInfo client, const std::string& web_dir);
+
 static const int max_request = 1;
 static const int sock_timeout_sec = 10;
 static const int max_worker = 100;
@@ -92,6 +94,7 @@ int main(int argc, char** argv)
         std::cout << err.what() << std::endl;
         exit(EXIT_FAILURE);
     }
+
     ClientInfo client;
     int worker_count = 0;
     while (true)
@@ -142,13 +145,20 @@ int main(int argc, char** argv)
         }
         else if (pid == 0)
         {
-            break;
+            return childWork(client, option.web_dir);
         }
-        worker_count += 1;
-        // parent part
-        close(client.fd);
+        else
+        {
+            // parent part
+            worker_count += 1;
+            close(client.fd);
+        }
     }
+    return EXIT_SUCCESS;
+}
 
+int childWork(ClientInfo client, const std::string& web_dir)
+{
     // child part
     bool keep_alive = true;
     int buff_size = 1 << 12;  // 4kb
@@ -159,7 +169,7 @@ int main(int argc, char** argv)
     if (wfd < 0)
     {
         perror("dup");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     Writer writer(wfd);
     int request_count = 0;
@@ -201,7 +211,7 @@ int main(int argc, char** argv)
             resp.version = http::Version::v1_1;
             resp.headers["Connection"] = keep_alive ? "keep-alive" : "close";
             resp.headers["Server"] = "wangnangg's private server";
-            if (!rootHandler(rq, reader, resp, writer, option.web_dir))
+            if (!rootHandler(rq, reader, resp, writer, web_dir))
             {
                 std::cout << "url not found: " << urlString(rq.url)
                           << std::endl;
@@ -209,14 +219,21 @@ int main(int argc, char** argv)
                           << std::endl;
                 std::cout << "\tmethod: " << http::methodString(rq.method)
                           << std::endl;
-                break;
+                return EXIT_FAILURE;
             }
         }
+    }
+    catch (http::client_error& err)
+    {
+        std::cout << "client error: " << err.what() << std::endl;
+        const char* fk = "fuck you.\r\n";
+        writer.put(fk, strlen(fk));
+        return EXIT_FAILURE;
     }
     catch (std::exception& err)
     {
         std::cout << "error in process request: " << err.what() << std::endl;
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }

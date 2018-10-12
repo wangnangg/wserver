@@ -150,7 +150,6 @@ int main(int argc, char** argv)
     }
 
     // child part
-    std::cout << "welcome guest: " << ipString(client.addr.ip) << std::endl;
     bool keep_alive = true;
     int buff_size = 1 << 12;  // 4kb
     char header_buff[buff_size];
@@ -173,9 +172,6 @@ int main(int argc, char** argv)
             auto header_raw = std::string(header_buff, header_size);
 
             auto rq = http::parseRequest(header_buff, header_size);
-
-            std::cout << "http: " << http::methodString(rq.method);
-            std::cout << " " << urlString(rq.url) << std::endl;
 
             if (rq.version == http::Version::v1_0)
             {
@@ -208,6 +204,10 @@ int main(int argc, char** argv)
             if (!rootHandler(rq, reader, resp, writer, option.web_dir))
             {
                 std::cout << "url not found: " << urlString(rq.url)
+                          << std::endl;
+                std::cout << "\trequester: " << ipString(client.addr.ip)
+                          << std::endl;
+                std::cout << "\tmethod: " << http::methodString(rq.method)
                           << std::endl;
                 break;
             }

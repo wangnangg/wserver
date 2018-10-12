@@ -84,13 +84,12 @@ void rootHandler(http::Request rq, BufferedReader& reader,
     if (rq.url.path.size() == 0)
     {
         // root request
-        rq.url = parseUrl("/index.html");
+        rq.url = parseUrl("/static/src/index.html");
     }
 
     const auto local_path = localPath(web_dir, rq.url.path);
 
-    if (rq.url.path.front() == "static" ||
-        rq.url.path.front() == "index.html")
+    if (rq.url.path.front() == "static")
     {
         if (!isReadableFile(local_path))
         {
@@ -108,6 +107,6 @@ out:
     std::cout << "url not found" << std::endl;
     resp.status = http::StatusCode::NotFound;
     resp.reason = "Not Found";
-    serveFile("404.html", std::move(resp), writer);
+    serveFile("/static/src/404.html", std::move(resp), writer);
     return;
 }

@@ -107,6 +107,6 @@ out:
     std::cout << "url not found" << std::endl;
     resp.status = http::StatusCode::NotFound;
     resp.reason = "Not Found";
-    serveFile("/static/src/404.html", std::move(resp), writer);
+    serveFile("./static/src/404.html", std::move(resp), writer);
     return;
 }

@@ -18,29 +18,6 @@ void writeAll(Writer& writer, BufferedReader& reader)
     } while (read_size > 0);
 }
 
-void serveFile(const std::string& path, http::Response resp, Writer& writer)
-{
-    int fd = open(path.c_str(), O_RDONLY);
-    if (fd < 0)
-    {
-        throw std::system_error(errno, std::system_category());
-    }
-    struct stat st;
-    int err = fstat(fd, &st);
-    if (err < 0)
-    {
-        throw std::system_error(errno, std::system_category());
-    }
-    int fsize = st.st_size;
-    auto reader = BufferedReader(fd, 0);
-
-    std::cout << "serving file: " << path << std::endl;
-    resp.headers["Content-Length"] = std::to_string(fsize);
-    auto resp_str = dump(resp);
-    writer.put(resp_str.c_str(), resp_str.size());
-    writeAll(writer, reader);
-}
-
 void redirect(const Url& url, http::Response resp, Writer& writer)
 {
     std::cout << "redirecting to " << urlString(url) << std::endl;
@@ -51,18 +28,40 @@ void redirect(const Url& url, http::Response resp, Writer& writer)
     writer.put(resp_str.c_str(), resp_str.size());
 }
 
-bool isReadableFile(const std::string& path)
+bool isRegFile(const std::string& path)
 {
-    if (access(path.c_str(), R_OK) != 0)
-    {
-        return false;
-    }
     struct stat st;
     if (stat(path.c_str(), &st) != 0)
     {
         return false;
     }
     if (!S_ISREG(st.st_mode))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool isReadFile(const std::string& path)
+{
+    if (!isRegFile(path))
+    {
+        return false;
+    }
+    if (access(path.c_str(), R_OK) != 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool isExeFile(const std::string& path)
+{
+    if (!isRegFile(path))
+    {
+        return false;
+    }
+    if (access(path.c_str(), X_OK) != 0)
     {
         return false;
     }
@@ -77,7 +76,43 @@ std::string localPath(const std::string& web_dir,
     return ss.str();
 }
 
-void rootHandler(http::Request rq, BufferedReader& reader,
+bool serveFile(const Url& url, const std::string& web_dir,
+               http::Response resp, Writer& writer)
+{
+    auto local_path = localPath(web_dir, url.path);
+    if (!isReadFile(local_path))
+    {
+        return false;
+    }
+
+    int fd = open(local_path.c_str(), O_RDONLY);
+    if (fd < 0)
+    {
+        throw std::system_error(errno, std::system_category());
+    }
+    struct stat st;
+    int err = fstat(fd, &st);
+    if (err < 0)
+    {
+        throw std::system_error(errno, std::system_category());
+    }
+    int fsize = st.st_size;
+    auto reader = BufferedReader(fd, 0);
+
+    resp.headers["Content-Length"] = std::to_string(fsize);
+    auto resp_str = dump(resp);
+    writer.put(resp_str.c_str(), resp_str.size());
+    writeAll(writer, reader);
+    return true;
+}
+
+bool serveDynamicFile(const Url& url, const std::string& web_dir,
+                      http::Response resp, Writer& writer)
+{
+    return true;
+}
+
+bool rootHandler(http::Request rq, BufferedReader& reader,
                  http::Response resp, Writer& writer,
                  const std::string& web_dir)
 {
@@ -86,27 +121,31 @@ void rootHandler(http::Request rq, BufferedReader& reader,
         // root request
         rq.url = parseUrl("/static/src/index.html");
     }
-
     const auto local_path = localPath(web_dir, rq.url.path);
 
     if (rq.url.path.front() == "static")
     {
-        if (!isReadableFile(local_path))
-        {
-            std::cout << "file not found" << std::endl;
-            goto out;
-        }
         resp.status = http::StatusCode::OK;
         resp.reason = "OK";
-        serveFile(local_path, std::move(resp), writer);
-        return;
+        if (serveFile(rq.url, web_dir, resp, writer))
+        {
+            return true;
+        }
+    }
+    else if (rq.url.path.front() == "dynamic")
+    {
+        resp.status = http::StatusCode::OK;
+        resp.reason = "OK";
+        if (serveDynamicFile(rq.url, web_dir, resp, writer))
+        {
+            return true;
+        }
     }
 
-out:
     // unknown place
-    std::cout << "url not found" << std::endl;
+    rq.url = parseUrl("/static/src/404.html");
     resp.status = http::StatusCode::NotFound;
     resp.reason = "Not Found";
-    serveFile("./static/src/404.html", std::move(resp), writer);
-    return;
+    serveFile(rq.url, web_dir, resp, writer);
+    return false;
 }

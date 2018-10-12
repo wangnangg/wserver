@@ -205,8 +205,12 @@ int main(int argc, char** argv)
             resp.version = http::Version::v1_1;
             resp.headers["Connection"] = keep_alive ? "keep-alive" : "close";
             resp.headers["Server"] = "wangnangg's private server";
-            rootHandler(std::move(rq), reader, std::move(resp), writer,
-                        option.web_dir);
+            if (!rootHandler(rq, reader, resp, writer, option.web_dir))
+            {
+                std::cout << "url not found: " << urlString(rq.url)
+                          << std::endl;
+                break;
+            }
         }
     }
     catch (std::exception& err)

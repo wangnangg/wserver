@@ -142,10 +142,10 @@ bool rootHandler(http::Request rq, BufferedReader& reader,
         }
     }
 
-    // unknown place
-    rq.url = parseUrl("/static/src/404.html");
+    // not found
     resp.status = http::StatusCode::NotFound;
     resp.reason = "Not Found";
-    serveFile(rq.url, web_dir, resp, writer);
+    auto resp_str = dump(resp);
+    writer.put(resp_str.c_str(), resp_str.size());
     return false;
 }

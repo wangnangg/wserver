@@ -223,20 +223,6 @@ int childWork(ClientInfo client, const std::string& web_dir)
             }
         }
     }
-    catch (http::client_error& err)
-    {
-        std::cout << "client error: " << err.what() << std::endl;
-        const char* fk = "fuck you.\r\n";
-        writer.put(fk, strlen(fk));
-        return EXIT_FAILURE;
-    }
-    catch (std::invalid_argument& err)
-    {
-        std::cout << "invalid argument: " << err.what() << std::endl;
-        const char* fk = "fuck you.\r\n";
-        writer.put(fk, strlen(fk));
-        return EXIT_FAILURE;
-    }
     catch (std::exception& err)
     {
         std::cout << "error in process request: " << err.what() << std::endl;

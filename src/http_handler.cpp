@@ -121,6 +121,10 @@ bool rootHandler(http::Request rq, BufferedReader& reader,
         // root request
         rq.url = parseUrl("/static/src/index.html");
     }
+    if (rq.url.path.size() == 1 && rq.url.path[0] == "cv")
+    {
+        rq.url = parseUrl("/static/src/CV.html");
+    }
     const auto local_path = localPath(web_dir, rq.url.path);
 
     if (rq.url.path.front() == "static")

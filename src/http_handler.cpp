@@ -123,7 +123,7 @@ bool rootHandler(http::Request rq, BufferedReader& reader,
     }
     if (rq.url.path.size() == 1 && rq.url.path[0] == "cv")
     {
-        redirect(parseUrl("/static/src/CV.html"), resp, writer);
+        redirect(parseUrl("/static/src/cv.html"), resp, writer);
         return true;
     }
     const auto local_path = localPath(web_dir, rq.url.path);
